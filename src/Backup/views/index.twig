@@ -1,0 +1,54 @@
+{% extends '@admin/layout.twig' %}
+{% block title trans("backup.title") %}
+{% block pagetitle trans("backup.title") %}
+{% block pagesubtitle trans("backup.subtitle") %}
+
+{% block scripts %}
+    {{ ago_scripts() }}
+
+    <script>
+        window.csrf = "{{ csrf_token() }}";
+    </script>
+    <script src="/modules/Admin/js/update.js"></script>
+
+{% endblock %}
+{% block body %}
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th scope="col">{{ trans("date") }}</th>
+                        <th scope="col">{{ trans("name") }}</th>
+                        <th scope="col">{{ trans("backup.size") }}</th>
+                        <th scope="col">{{ trans("action") }}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% set token_input = csrf_input() %}
+                    {% for save in saves %}
+                        <tr>
+                            <td>{{ save.createdAt() | ago }}</td>
+                            <td>{{ save.path() }}</td>
+                            <td>{{ save.size }} MB</td>
+                            <td>
+                                <form style="display: inline;"
+                                      action="{{ path('backup.delete') }}" method="POST"
+                                      onsubmit="return confirmation();"/>
+                                <input type="hidden" name="id" value="{{ save.id }}">
+                                <input type="hidden" name="_method" value="DELETE">
+                                <button class="btn btn-danger"><i class="fas fa-times"></i></button>
+                                {{ token_input |raw }}
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
