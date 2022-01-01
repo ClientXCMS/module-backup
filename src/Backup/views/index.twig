@@ -32,7 +32,7 @@
                         <tr>
                             <td>{{ save.createdAt() | ago }}</td>
                             <td>{{ save.path() }}</td>
-                            <td>{{ save.size }} MB</td>
+                            <td>{{ save.size }} KB</td>
                             <td>
                                 <form style="display: inline;"
                                       action="{{ path('backup.delete') }}" method="POST"
