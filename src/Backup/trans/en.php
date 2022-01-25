@@ -3,6 +3,6 @@ return [
     'backup' => [
         'title' => "Backup",
         "size" => "Size",
-        'subtitle' => 'Manage yours backup'
+        'subtitle' => 'Manage your system backups'
     ]
 ];
