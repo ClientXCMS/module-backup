@@ -2,7 +2,8 @@
 return [
     'backup' => [
         "size" => "Taille",
-        'title' => "Sauvegarde",
+        'title' => "Sauvegardes",
         'subtitle' => "Administrez vos sauvegardes du système.",
+        'add' => "Sauvegarder manuellement",
     ]
 ];

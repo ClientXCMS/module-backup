@@ -2,18 +2,24 @@
 {% block title trans("backup.title") %}
 {% block pagetitle trans("backup.title") %}
 {% block pagesubtitle trans("backup.subtitle") %}
+{% set token_input = csrf_input() %}
 
 {% block scripts %}
     {{ ago_scripts() }}
 
-    <script>
-        window.csrf = "{{ csrf_token() }}";
-    </script>
-    <script src="/modules/Admin/js/update.js"></script>
+{% endblock %}
+{% block buttoninfo %}
+    <div class="col-sm-6">
+        <form method="POST" action="{{ path('backup.create') }}">
+            {{ token_input |raw }}
 
+            <input type="hidden" name="_method" value="PUT">
+            <button class="btn btn-primary btn-md float-right"
+               title="{{ trans("save") }}">{{ trans("backup.add") }}</button>
+        </form>
+    </div>
 {% endblock %}
 {% block body %}
-
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
@@ -27,24 +33,40 @@
                     </tr>
                     </thead>
                     <tbody>
-                    {% set token_input = csrf_input() %}
-                    {% for save in saves %}
+                    {% if saves is not empty %}
+
+                        {% for save in saves %}
                         <tr>
                             <td>{{ save.createdAt() | ago }}</td>
                             <td>{{ save.path() }}</td>
                             <td>{{ save.size }} KB</td>
                             <td>
+
                                 <form style="display: inline;"
-                                      action="{{ path('backup.delete') }}" method="POST"
+                                      action="{{ path('backup.download', {id: save.id}) }}" method="POST"
+                                      />
+                                <input type="hidden" name="id" value="{{ save.id }}">
+                                <button class="btn btn-primary"><i class="fas fa-cloud-download"></i></button>
+                                {{ token_input |raw }}
+                                </form>
+                                <form style="display: inline;"
+                                      action="{{ path('backup.delete', {id: save.id}) }}" method="POST"
                                       onsubmit="return confirmation();"/>
                                 <input type="hidden" name="id" value="{{ save.id }}">
                                 <input type="hidden" name="_method" value="DELETE">
                                 <button class="btn btn-danger"><i class="fas fa-times"></i></button>
                                 {{ token_input |raw }}
                                 </form>
+
                             </td>
                         </tr>
                     {% endfor %}
+                    {% else %}
+
+                        <tr>
+                            <td colspan="6">{{ trans("no_record") }}</td>
+                        </tr>
+                    {% endif %}
                     </tbody>
                 </table>
             </div>

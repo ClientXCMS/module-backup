@@ -7,6 +7,7 @@ use App\Backup\BackupService;
 use ClientX\Actions\Action;
 use ClientX\Middleware\CsrfMiddleware;
 use ClientX\Renderer\RendererInterface;
+use ClientX\Response\RedirectBackResponse;
 use ClientX\Session\FlashService;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -24,37 +25,70 @@ class BackupAction extends Action
         $this->csrf = $csrf;
     }
 
+    /**
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @return \ClientX\Response\RedirectBackResponse|string
+     */
     public function __invoke(ServerRequestInterface $request)
     {
-
         if ($request->getMethod() === 'DELETE') {
             return $this->delete($request);
         }
 
+        if ($request->getMethod() === 'PUT') {
+            return $this->create($request);
+        }
+
         if ($request->getMethod() === 'POST') {
-            return $this->restore($request);
+            return $this->download($request);
         }
         $saves = $this->service->fetch();
         return $this->render('@backup/index', compact('saves'));
     }
 
-    private function restore(ServerRequestInterface $request)
+    /**
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @return \ClientX\Response\RedirectBackResponse
+     */
+    private function delete(ServerRequestInterface $request): RedirectBackResponse
     {
-        $result = $this->service->restore($request->getAttribute('save'));
-        if (is_string($result)) {
-            $this->error($result);
-        }
-        return $this->json(['csrf' => $this->csrf->generateToken(), 'result' => true]);
-    }
-
-    private function delete(ServerRequestInterface $request)
-    {
-        $result = $this->service->delete($request->getParsedBody()['id']);
+        $result = $this->service->delete($request->getAttribute('id'));
         if (is_string($result)) {
             $this->error($result);
         } else {
             $this->success('Done!');
         }
         return $this->back($request);
+    }
+
+    /**
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @return \ClientX\Response\RedirectBackResponse
+     */
+    private function create(ServerRequestInterface $request): RedirectBackResponse
+    {
+
+        $result = $this->service->backup();
+        if ($result) {
+            dd("ok");
+            $this->success("Done!");
+        }
+        return $this->back($request);
+
+    }
+
+    /**
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @return \ClientX\Response\RedirectBackResponse
+     */
+    private function download(ServerRequestInterface $request): RedirectBackResponse
+    {
+
+        $result = $this->service->download($request->getAttribute('id'));
+        if ($result) {
+            $this->success("Done!");
+        }
+        return $this->back($request);
+
     }
 }

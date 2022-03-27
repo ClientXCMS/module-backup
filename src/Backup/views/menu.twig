@@ -1,8 +1,11 @@
+
+{% if current_admin() is can('admin') %}
 <li class="nav-item">
-    <a href="{{ path("backup") }}" class="nav-link {{ is_subpath('backup') ? 'active' }}">
+    <a href="{{ path("backup") }}" class="nav-link {{ is_subpath('admin') ? 'active' }}">
         <i class="nav-icon fas fa-save"></i>
         <p>
             {{ trans("backup.title") }}
         </p>
     </a>
 </li>
+{% endif %}

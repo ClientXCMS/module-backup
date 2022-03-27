@@ -18,14 +18,19 @@ class BackupModule extends \ClientX\Module
         "en_GB" => __DIR__ . "/trans/en.php"
     ];
 
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function __construct(RendererInterface $renderer, Router $router, ContainerInterface $container)
     {
         $renderer->addPath('backup', __DIR__ . '/views');
         if ($container->has("admin.prefix")) {
             $prefix = $container->get("admin.prefix");
             $router->any($prefix . '/backup', BackupAction::class, 'backup');
-
-            $router->post($prefix . '/backup/[*:save]', BackupAction::class, 'backup.restore');
+            $router->put($prefix . '/backup/add', BackupAction::class, 'backup.create');
+            $router->post($prefix . '/backup/download/[*:id]', BackupAction::class, 'backup.download');
+            $router->delete($prefix . '/backup/delete/[*:id]', BackupAction::class, 'backup.delete');
         }
     }
 }

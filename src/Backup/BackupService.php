@@ -4,10 +4,12 @@
 namespace App\Backup;
 
 use ClientX\App;
+use ClientX\Response\FileResponse;
 use PDO;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class BackupService
 {
@@ -39,8 +41,7 @@ class BackupService
         foreach ($files as $file) {
             $tmp[] = new BackupFile($file);
         }
-
-        usort($tmp, function(BackupFile $a, BackupFile $b){
+        usort($tmp, function (BackupFile $a, BackupFile $b) {
             try {
                 return $a->getCreatedAt()->format('U') < $b->getCreatedAt()->format('U');
             } catch (\Exception $e) {
@@ -50,9 +51,17 @@ class BackupService
         return $tmp;
     }
 
-    public function restore(string $id)
+    public function download(string $id)
     {
-        return true;
+        try {
+            /** @var \SplFileInfo $file */
+            $file = collect($this->finder->in($this->directory)->filter(function (\SplFileInfo  $file) use ($id) {
+                return $file->getFilename() === $id . '.sql';
+            })->files())->first();
+        } catch (IOException $e) {
+            return $e->getMessage();
+        }
+        return new FileResponse(200, [], $file->getRealPath(), "ClientXCMS Database backup of " . (new BackupFile($file))->getCreatedAt()->format('d-m-y H-i'));
     }
 
     public function delete(string $id)

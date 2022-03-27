@@ -1,8 +1,9 @@
 <?php
 return [
     'backup' => [
-        'title' => "Backup",
+        'title' => "Backups",
         "size" => "Size",
-        'subtitle' => 'Manage your system backups'
+        'subtitle' => 'Manage your system backups',
+        'add' => "Save manually"
     ]
 ];
