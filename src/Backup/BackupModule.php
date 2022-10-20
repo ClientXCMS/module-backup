@@ -18,6 +18,7 @@ class BackupModule extends \ClientX\Module
         "en_GB" => __DIR__ . "/trans/en.php",
         "uk_UA" => __DIR__ . "/trans/ua.php",
         "es_ES" => __DIR__ . "/trans/es.php",
+        "de_DE" => __DIR__ . "/trans/de.php",
         "ja_JP" => __DIR__ . "/trans/ja.php"
     ];
 
