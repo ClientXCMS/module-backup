@@ -1,81 +1,23 @@
 <?php
 
-
 namespace App\Backup;
 
-use ClientX\App;
-use ClientX\Response\FileResponse;
-use PDO;
-use Symfony\Component\Filesystem\Exception\IOException;
-use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Finder\Finder;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class BackupService
 {
 
-    private PDO $PDO;
-    private string $suffix;
-    private Filesystem $file;
+    private array $types;
+    private int $limit;
+    private \PDO $pdo;
 
-    const PREFIX = "db_backup_";
-    private Finder $finder;
-    private string $directory;
-
-    public function __construct(PDO $PDO)
+    public function __construct(array $types, string $limit, \PDO $pdo)
     {
-        $this->PDO = $PDO;
-        $this->suffix = date('Y-m-d_H-i-s');
-        $this->file = new Filesystem();
-        $this->finder = new Finder();
-        $this->directory = App::getAppDir() . '/backups';
+        $this->types = $types;
+        $this->limit = (int)$limit;
+        $this->pdo = $pdo;
     }
 
-    public function fetch(): array
-    {
-        if (file_exists($this->directory) == false) {
-            mkdir($this->directory, 777);
-        }
-        $tmp = [];
-        $files = $this->finder->in($this->directory)->files();
-        foreach ($files as $file) {
-            $tmp[] = new BackupFile($file);
-        }
-        usort($tmp, function (BackupFile $a, BackupFile $b) {
-            try {
-                return $a->getCreatedAt()->format('U') < $b->getCreatedAt()->format('U');
-            } catch (\Exception $e) {
-                return false;
-            }
-        });
-        return $tmp;
-    }
-
-    public function download(string $id)
-    {
-        try {
-            /** @var \SplFileInfo $file */
-            $file = collect($this->finder->in($this->directory)->filter(function (\SplFileInfo  $file) use ($id) {
-                return $file->getFilename() === $id . '.sql';
-            })->files())->first();
-        } catch (IOException $e) {
-            return $e->getMessage();
-        }
-        return new FileResponse(200, [], $file->getRealPath(), "ClientXCMS Database backup of " . (new BackupFile($file))->getCreatedAt()->format('d-m-y H-i'));
-    }
-
-    public function delete(string $id)
-    {
-        try {
-            $this->file->remove($this->directory .'/' . $id . '.sql');
-            return true;
-        } catch (IOException $e) {
-            return $e->getMessage();
-        }
-    }
-
-
-    public function backup($tables = '*')
+    public function dump($tables = '*')
     {
         $output = "-- database backup - " . date('Y-m-d H:i:s') . PHP_EOL;
         $output .= "SET NAMES utf8;" . PHP_EOL;
@@ -86,9 +28,9 @@ class BackupService
         //get all table names
         if ($tables == '*') {
             $tables = [];
-            $query = $this->PDO->prepare('SHOW TABLES');
+            $query = $this->pdo->prepare('SHOW TABLES');
             $query->execute();
-            while ($row = $query->fetch(PDO::FETCH_NUM)) {
+            while ($row = $query->fetch(\PDO::FETCH_NUM)) {
                 $tables[] = $row[0];
             }
             $query->closeCursor();
@@ -97,17 +39,17 @@ class BackupService
         }
 
         foreach ($tables as $table) {
-            $query = $this->PDO->prepare("SELECT * FROM `$table`");
+            $query = $this->pdo->prepare("SELECT * FROM `$table`");
             $query->execute();
             $output .= "DROP TABLE IF EXISTS `$table`;" . PHP_EOL;
 
-            $query2 = $this->PDO->prepare("SHOW CREATE TABLE `$table`");
+            $query2 = $this->pdo->prepare("SHOW CREATE TABLE `$table`");
             $query2->execute();
-            $row2 = $query2->fetch(PDO::FETCH_NUM);
+            $row2 = $query2->fetch(\PDO::FETCH_NUM);
             $query2->closeCursor();
             $output .= PHP_EOL . $row2[1] . ";" . PHP_EOL;
 
-            while ($row = $query->fetch(PDO::FETCH_NUM)) {
+            while ($row = $query->fetch(\PDO::FETCH_NUM)) {
                 $output .= "INSERT INTO `$table` VALUES(";
                 for ($j = 0; $j < count($row); $j++) {
                     $row[$j] = addslashes($row[$j]);
@@ -127,10 +69,95 @@ class BackupService
         $output .= PHP_EOL . PHP_EOL;
 
         $output .= "COMMIT;";
+        return $output;
+    }
 
-        $filename = self::PREFIX . $this->suffix . '.sql';
+    public function save(string $dump, string $type)
+    {
 
-        $this->file->appendToFile($this->directory . '/' . $filename, $output);
-        return true;
+        /** @var BackupServiceInterface|null $service */
+        $service = collect($this->types)->filter(function (BackupServiceInterface $service) use ($type) {
+            return $service->type() == $type && $service->detected();
+        })->first();
+        if ($service == null) {
+            return "Cannot find service";
+        }
+        return $service->save($dump);
+    }
+
+    public function deleteOld():array
+    {
+
+        return collect($this->types)->filter(function (BackupServiceInterface $backupService) {
+            return $backupService->detected() && count($backupService->fetch()) > $this->limit;
+        })->mapWithKeys(function (BackupServiceInterface $backupService) {
+            $deleted = collect($backupService->fetch())->slice($this->limit);
+            $tmp = collect($deleted)->map(function(BackupFileInterface $file) use ($backupService){
+                try {
+                    $backupService->delete($file->getId());
+                    return 'success';
+                } catch (\Exception $e){
+                    return $e->getMessage();
+                }
+            })->toArray();
+            return [$backupService->type() => $tmp];
+        })->toArray();
+    }
+
+    public function fetchAll()
+    {
+        return collect($this->types)->filter(function (BackupServiceInterface $backupService) use ($dump) {
+            return $backupService->detected();
+        })->mapWithKeys(function (BackupServiceInterface $service) {
+            return [$service->type() => $service->fetch()];
+        });
+    }
+
+    public function download(string $id, string $type)
+    {
+        /** @var BackupServiceInterface|null $service */
+        $service = collect($this->types)->filter(function (BackupServiceInterface $backupService) use ($dump) {
+            return $backupService->detected();
+        })->filter(function (BackupServiceInterface $service) use ($type) {
+            return $service->type() == $type;
+        })->first();
+        if ($service == null) {
+            return "Cannot find service";
+        }
+        return $service->download($id);
+    }
+
+    public function delete(string $id, string $type)
+    {
+
+        /** @var BackupServiceInterface|null $service */
+        $service = collect($this->types)->filter(function (BackupServiceInterface $backupService) use ($dump) {
+            return $backupService->detected();
+        })->filter(function (BackupServiceInterface $service) use ($type) {
+            return $service->type() == $type;
+        })->first();
+        if ($service == null) {
+            return "Cannot find service";
+        }
+        return $service->delete($id);
+    }
+
+    public function getNames():array
+    {
+        return collect($this->types)->filter(function (BackupServiceInterface $backupService) use ($dump) {
+            return $backupService->detected();
+        })->mapWithKeys(function ($type) {
+            return [$type->type() => $type->name()];
+        })->toArray();
+    }
+
+    public function backupAll():array
+    {
+        $dump = $this->dump();
+        return collect($this->types)->filter(function (BackupServiceInterface $backupService) use ($dump) {
+            return $backupService->detected();
+        })->mapWithKeys(function (BackupServiceInterface $backupService) use ($dump) {
+            return [$backupService->type() => $backupService->save($dump)];
+        })->toArray();
     }
 }

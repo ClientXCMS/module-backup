@@ -42,8 +42,9 @@ class BackupAction extends Action
         if ($request->getMethod() === 'POST') {
             return $this->download($request);
         }
-        $saves = $this->service->fetch();
-        return $this->render('@backup/index', compact('saves'));
+        $fetch = $this->service->fetchAll();
+        $elements = $this->service->getNames();
+        return $this->render('@backup/index', compact('fetch', 'elements'));
     }
 
     /**
@@ -52,7 +53,7 @@ class BackupAction extends Action
      */
     private function delete(ServerRequestInterface $request): RedirectBackResponse
     {
-        $result = $this->service->delete($request->getAttribute('id'));
+        $result = $this->service->delete($request->getAttribute('id'), $request->getAttribute('type'));
         if (is_string($result)) {
             $this->error($result);
         } else {
@@ -67,10 +68,9 @@ class BackupAction extends Action
      */
     private function create(ServerRequestInterface $request): RedirectBackResponse
     {
-
-        $result = $this->service->backup();
+        $dump = $this->service->dump();
+        $result = $this->service->save($dump, array_keys($this->service->getNames())[0]);
         if ($result) {
-            dd("ok");
             $this->success("Done!");
         }
         return $this->back($request);
@@ -79,14 +79,14 @@ class BackupAction extends Action
 
     /**
      * @param \Psr\Http\Message\ServerRequestInterface $request
-     * @return \ClientX\Response\RedirectBackResponse
      */
-    private function download(ServerRequestInterface $request): RedirectBackResponse
+    private function download(ServerRequestInterface $request)
     {
 
-        $result = $this->service->download($request->getAttribute('id'));
+        $result = $this->service->download($request->getAttribute('id'), $request->getAttribute('type'));
         if ($result) {
             $this->success("Done!");
+            return $result;
         }
         return $this->back($request);
 

@@ -20,8 +20,11 @@
     </div>
 {% endblock %}
 {% block body %}
+    {% for element, saves in fetch %}
+
     <div class="card">
         <div class="card-body">
+            <h3>{{ elements[element] }}</h3>
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
@@ -43,14 +46,14 @@
                             <td>
 
                                 <form style="display: inline;"
-                                      action="{{ path('backup.download', {id: save.id}) }}" method="POST"
+                                      action="{{ path('backup.download', {type: element, id: save.id}) }}" method="POST"
                                       />
                                 <input type="hidden" name="id" value="{{ save.id }}">
                                 <button class="btn btn-primary"><i class="fas fa-cloud-download"></i></button>
                                 {{ token_input |raw }}
                                 </form>
                                 <form style="display: inline;"
-                                      action="{{ path('backup.delete', {id: save.id}) }}" method="POST"
+                                      action="{{ path('backup.delete', {type: element, id: save.id}) }}" method="POST"
                                       onsubmit="return confirmation();"/>
                                 <input type="hidden" name="id" value="{{ save.id }}">
                                 <input type="hidden" name="_method" value="DELETE">
@@ -72,5 +75,6 @@
             </div>
         </div>
     </div>
+    {% endfor %}
 
 {% endblock %}

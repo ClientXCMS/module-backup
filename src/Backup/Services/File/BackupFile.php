@@ -1,11 +1,12 @@
 <?php
 
 
-namespace App\Backup;
+namespace App\Backup\Services\File;
 
-use Symfony\Component\Finder\SplFileInfo;
+use App\Backup\BackupFileInterface;
+use SplFileInfo;
 
-class BackupFile
+class BackupFile implements BackupFileInterface
 {
 
     private SplFileInfo $info;
@@ -36,7 +37,7 @@ class BackupFile
     public function getCreatedAt(): \DateTime
     {
         $name = $this->info->getFilenameWithoutExtension();
-        $name = str_replace(BackupService::PREFIX, '', $name);
+        $name = str_replace(FileServiceBackup::PREFIX, '', $name);
         $parts = explode('_', $name);
         [$year, $month, $day] = explode('-', $parts[1]);
         [$hour, $minute, $second] = explode('-', $parts[0]);
