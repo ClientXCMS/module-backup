@@ -106,7 +106,7 @@ class BackupService
 
     public function fetchAll()
     {
-        return collect($this->types)->filter(function (BackupServiceInterface $backupService) use ($dump) {
+        return collect($this->types)->filter(function (BackupServiceInterface $backupService) {
             return $backupService->detected();
         })->mapWithKeys(function (BackupServiceInterface $service) {
             return [$service->type() => $service->fetch()];
@@ -116,7 +116,7 @@ class BackupService
     public function download(string $id, string $type)
     {
         /** @var BackupServiceInterface|null $service */
-        $service = collect($this->types)->filter(function (BackupServiceInterface $backupService) use ($dump) {
+        $service = collect($this->types)->filter(function (BackupServiceInterface $backupService) {
             return $backupService->detected();
         })->filter(function (BackupServiceInterface $service) use ($type) {
             return $service->type() == $type;
