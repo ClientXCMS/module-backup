@@ -8,6 +8,8 @@ use ClientX\Router;
 use Google\Service\Drive;
 use GuzzleHttp\Psr7\Response;
 
+use function ClientX\request;
+use ClientX\Helpers\RequestHelper;
 class GoogleDriveApi
 {
     const SCOPE = 'https://www.googleapis.com/auth/drive';
@@ -55,7 +57,7 @@ class GoogleDriveApi
 
     public function getRedirectUri()
     {
-        return $this->router->generateURIAbsolute('backup.google');
+        return RequestHelper::getDomain(request()) . '/admin/backup/google';
     }
 
     public function fetchFolder()
