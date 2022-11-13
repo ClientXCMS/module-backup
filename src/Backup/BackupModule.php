@@ -36,6 +36,9 @@ class BackupModule extends \ClientX\Module
             $router->delete($prefix . '/backup/delete/[*:type]/[*:id]', BackupAction::class, 'backup.delete');
         }
         //dd($container->get('backup.types'));
+        if (!class_exists("\Google\Client")){
+            die("[Backup Module] : Please update your dependances");
+        }
 
     }
 }
