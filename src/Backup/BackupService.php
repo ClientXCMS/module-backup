@@ -131,7 +131,7 @@ class BackupService
     {
 
         /** @var BackupServiceInterface|null $service */
-        $service = collect($this->types)->filter(function (BackupServiceInterface $backupService) use ($dump) {
+        $service = collect($this->types)->filter(function (BackupServiceInterface $backupService) {
             return $backupService->detected();
         })->filter(function (BackupServiceInterface $service) use ($type) {
             return $service->type() == $type;
@@ -144,7 +144,7 @@ class BackupService
 
     public function getNames():array
     {
-        return collect($this->types)->filter(function (BackupServiceInterface $backupService) use ($dump) {
+        return collect($this->types)->filter(function (BackupServiceInterface $backupService) {
             return $backupService->detected();
         })->mapWithKeys(function ($type) {
             return [$type->type() => $type->name()];
