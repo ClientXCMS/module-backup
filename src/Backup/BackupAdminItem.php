@@ -11,7 +11,7 @@ class BackupAdminItem implements NavigationItemInterface
 
     public function getPosition(): int
     {
-        return 70;
+        return 10;
     }
 
     public function render(RendererInterface $renderer): string
