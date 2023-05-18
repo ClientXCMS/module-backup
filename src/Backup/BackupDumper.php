@@ -135,7 +135,7 @@ class BackupDumper
     ) {
         $dumpSettingsDefault = array(
             'include-tables' => array(),
-            'exclude-tables' => array(),
+            'exclude-tables' => ['cron_logs', 'logs'],
             'include-views' => array(),
             'compress' => BackupDumper::NONE,
             'init_commands' => array(),
